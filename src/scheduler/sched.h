@@ -3,15 +3,15 @@
 #pragma once
 
 typedef enum proc_state {
-    RUNNING,
-    READY,
-    SLEEPING,
+    RUNNING = 3,
+    READY = 2,
+    SLEEPING = 1,
     UNUSED = 0
 }proc_state;
 
 typedef struct context {
     uint64_t rbx, rsp, rbp, r12, r13, r14, r15;
-    uint64_t rip, rflags;
+    uint64_t rip;
 } __attribute((packed))context;
 
 typedef struct proc {

@@ -16,7 +16,6 @@ int next_pid = 1;
 
 void idle_task(){
     kprintf("Hello world from bruhd task!\n");
-    for(;;);
 }
 
 void test_task(){
@@ -26,45 +25,33 @@ void test_task(){
 
 /* Setup a process structure */
 proc *alloc_process(void){
-    asm("cli");
-
-    cpu_state *state = get_cpu_struct();
-    kprintf("hi10\n");
-    proc *proc_list = state->process_list;
-
-    uint8_t *sp;
+    proc *proc_list = get_cpu_struct()->process_list;
 
     for(uint64_t i = 0; i < PROC_MAX; i++){
         if(proc_list[i].state == UNUSED){
-            /* Set the process ready to be executed */
-            kprintf("hi6\n");
-            proc_list[i].state = READY;
-            proc_list[i].kstack = kmalloc(INITIAL_STACK_SIZE);
+            proc *p = &proc_list[i];
 
-            if(proc_list[i].kstack == NULL){
-                klog(LOG_ERROR, __func__, "Failed to alloc stack");
-            }
-            kprintf("hi7\n");
+            p->state = READY;
+            kprintf("pstate = 0x{x}\n", READY);
+            kprintf("actual: 0x{x}\n", p->state);
+            p->kstack = kmalloc(INITIAL_STACK_SIZE);
 
-            proc_list[i].pid = next_pid++;
+            p->pid = next_pid++;
 
-            sp = (uint8_t*)((uint64_t)proc_list[i].kstack + INITIAL_STACK_SIZE);
+            memset(&p->context, 0, sizeof(context));
 
-            proc_list[i].context.rip = 0;
-            proc_list[i].context.rsp = (uint64_t)sp;
+            p->context.rbp = (uint64_t)p->kstack;
+            p->context.rsp = (uint64_t)p->context.rbp + INITIAL_STACK_SIZE;
+            
+            kprintf("actua2l: 0x{x}\n", p->state);
 
-            kprintf("hi8\n");
-
-            asm("sti");
-
-            return &proc_list[i];
+            return p;
         }
     }
-    asm("sti");
 
-    return NULL;
+    kprintf("Couldn't find free process!");
+
 }
-
 kstatus add_task(uint64_t *entry){
     proc *proc = alloc_process();
 
@@ -79,28 +66,31 @@ kstatus add_task(uint64_t *entry){
 }
 
 void scheduler_init(){
+    if(!get_cpu_struct_initialized()){
+        kprintf("sched: cpu struct not initialized!");
+        kkill();
+    }
+
     cpu_state *state = get_cpu_struct();
 
     if(state->current_process != NULL){
         kprintf("sched: scheduler on CPU {d} already initialized!\n", state->lapic_id);
         kkill();
     }
+
     kprintf("hi1\n");
     proc *proc_list = state->process_list;
 
-    /* Put the idle task */
-    proc idle = {0, 0, 0, READY, {0, 0, 0, 0, 0, 0, 0, 0, 0}};
+    memset(proc_list, 0, sizeof(proc) * 512);
 
-    /* Make the idle structure the firstr process */
-    proc_list[0] = idle;
-
-    kprintf("hi2\n");
+    int pid = add_task((uint64_t*)idle_task);
     add_task((uint64_t*)test_task);
-    kprintf("hi5\n");
 
     for(;;){
         for(int i = 0; i < PROC_MAX; i++){
             if(proc_list[i].state == READY){
+
+                kprintf("Hell yeah");
                 
                 context old_state = state->current_process->context;
 
@@ -118,6 +108,7 @@ void scheduler_tick(){
     cpu_state *state = get_cpu_struct();
     proc *proc_list = state->process_list;
 
+    switch_context(&state->current_process->context, &state->scheduler_context);
 
 
 }

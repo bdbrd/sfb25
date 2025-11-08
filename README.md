@@ -12,7 +12,7 @@ in the `build` folder you should have a `SFB25.iso` file.
 
 To try out SFB/25 you can use QEMU:
 
-`qemu-system-x86_64 build/SFB25.iso -m 512M`
+`qemu-system-x86_64 build/SFB25.iso -machine q35 -m 512M`
 
 ## External projects
 
