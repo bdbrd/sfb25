@@ -35,15 +35,20 @@ proc *alloc_process(void){
             kprintf("pstate = 0x{x}\n", READY);
             kprintf("actual: 0x{x}\n", p->state);
             p->kstack = kmalloc(INITIAL_STACK_SIZE);
+            kprintf("actua1l: 0x{x}\n", p->state);
 
             p->pid = next_pid++;
 
+            kprintf("actua2l: 0x{x}\n", p->state);
+
             memset(&p->context, 0, sizeof(context));
+
+            kprintf("actua3l: 0x{x}\n", p->state);
 
             p->context.rbp = (uint64_t)p->kstack;
             p->context.rsp = (uint64_t)p->context.rbp + INITIAL_STACK_SIZE;
             
-            kprintf("actua2l: 0x{x}\n", p->state);
+            kprintf("actua4l: 0x{x}\n", p->state);
 
             return p;
         }
